@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Card – Vasuki NFC</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Firebase v10 modular (compat for simplicity in HTML files) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="card-page">
+
+<!-- Loading state -->
+<div class="card-loading" id="cardLoading">
+  <div class="loading-logo">⬡</div>
+  <div class="loading-spinner"></div>
+  <p>Loading your card...</p>
+</div>
+
+<!-- Error state -->
+<div class="card-error hidden" id="cardError">
+  <div class="error-icon">⬡</div>
+  <h2>Card Not Found</h2>
+  <p>This digital card does not exist or may have been removed.</p>
+  <a href="index.html" class="btn-primary">Visit Vasuki NFC</a>
+</div>
+
+<!-- Card Profile Page -->
+<div class="card-profile hidden" id="cardProfile">
+
+  <!-- Background effects -->
+  <div class="profile-bg">
+    <div class="profile-orb profile-orb-1"></div>
+    <div class="profile-orb profile-orb-2"></div>
+  </div>
+
+  <div class="profile-container">
+
+    <!-- Header / Cover -->
+    <div class="profile-header">
+      <div class="profile-cover"></div>
+      <div class="profile-avatar-wrap">
+        <img id="profilePhoto" src="" alt="Profile Photo" class="profile-avatar" onerror="this.src='https://ui-avatars.com/api/?name=User&background=0f1117&color=a855f7&size=200'" />
+        <div class="avatar-ring"></div>
+      </div>
+    </div>
+
+    <!-- Main Info -->
+    <div class="profile-body">
+      <div class="profile-name-section">
+        <h1 id="profileName" class="profile-name">Loading...</h1>
+        <p id="profileBusiness" class="profile-business"></p>
+        <p id="profileTagline" class="profile-tagline"></p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="profile-actions" id="profileActions">
+        <!-- Dynamically inserted -->
+      </div>
+
+      <!-- Social Links -->
+      <div class="profile-socials" id="profileSocials">
+        <!-- Dynamically inserted -->
+      </div>
+
+      <!-- Save Contact + QR Section -->
+      <div class="profile-extras">
+        <button id="saveContactBtn" class="btn-save-contact" onclick="downloadVCard()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Save Contact
+        </button>
+        <button class="btn-share-card" onclick="shareCard()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share Card
+        </button>
+      </div>
+
+      <!-- QR Code toggle -->
+      <div class="qr-toggle-section">
+        <button class="btn-ghost btn-sm" onclick="toggleQR()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Show QR Code
+        </button>
+      </div>
+
+      <div class="qr-section hidden" id="qrSection">
+        <p class="qr-label">Scan to open this card</p>
+        <div id="qrcode" class="qr-code-box"></div>
+        <p class="qr-url" id="qrUrl"></p>
+      </div>
+
+      <!-- Powered by -->
+      <div class="powered-by">
+        <a href="index.html">
+          <span class="logo-icon">⬡</span>
+          Powered by <strong>Vasuki NFC</strong>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase config + card script -->
+<script>
+  // =============================================
+  // REPLACE THIS WITH YOUR FIREBASE CONFIG
+  // =============================================
+  // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCOmTjeArwCvJMWI0xxyle3fo66X7mTM-s",
+  authDomain: "vasuki-nfc-2bb32.firebaseapp.com",
+  projectId: "vasuki-nfc-2bb32",
+  storageBucket: "vasuki-nfc-2bb32.firebasestorage.app",
+  messagingSenderId: "403967953627",
+  appId: "1:403967953627:web:87d9d3c55b4d9a12909afe"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+  // =============================================
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Global card data for vCard export
+  let cardData = {};
+
+  // Get slug from URL: card.html?slug=rahul-sharma
+  const urlParams = new URLSearchParams(window.location.search);
+  const slug = urlParams.get('slug');
+
+  if (!slug) {
+    showError();
+  } else {
+    loadCard(slug);
+  }
+
+  async function loadCard(slug) {
+    try {
+      const doc = await db.collection('cards').doc(slug).get();
+      if (!doc.exists) {
+        showError();
+        return;
+      }
+      cardData = doc.data();
+      renderCard(cardData, slug);
+    } catch (err) {
+      console.error('Error loading card:', err);
+      showError();
+    }
+  }
+
+  function renderCard(data, slug) {
+    // Update meta title
+    document.title = `${data.name} – Vasuki NFC`;
+
+    // Photo
+    const photo = document.getElementById('profilePhoto');
+    if (data.photoUrl) {
+      photo.src = data.photoUrl;
+    } else {
+      photo.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=0f1117&color=a855f7&size=200&bold=true`;
+    }
+
+    // Text info
+    document.getElementById('profileName').textContent = data.name || '';
+    document.getElementById('profileBusiness').textContent = data.business || '';
+    document.getElementById('profileTagline').textContent = data.tagline || '';
+
+    // Action buttons
+    const actions = document.getElementById('profileActions');
+    actions.innerHTML = '';
+
+    if (data.phone) {
+      actions.innerHTML += `
+        <a href="tel:${data.phone}" class="action-btn action-call">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.07 6.07l1.79-1.79a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Call
+        </a>`;
+    }
+
+    if (data.phone) {
+      actions.innerHTML += `
+        <a href="https://wa.me/${data.phone.replace(/\D/g,'')}" target="_blank" class="action-btn action-whatsapp">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </a>`;
+    }
+
+    if (data.email) {
+      actions.innerHTML += `
+        <a href="mailto:${data.email}" class="action-btn action-email">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          Email
+        </a>`;
+    }
+
+    // Social links
+    const socials = document.getElementById('profileSocials');
+    socials.innerHTML = '';
+
+    if (data.instagram) {
+      socials.innerHTML += `
+        <a href="${data.instagram}" target="_blank" class="social-btn social-instagram" title="Instagram">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+        </a>`;
+    }
+
+    if (data.youtube) {
+      socials.innerHTML += `
+        <a href="${data.youtube}" target="_blank" class="social-btn social-youtube" title="YouTube">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor"/></svg>
+        </a>`;
+    }
+
+    if (data.linkedin) {
+      socials.innerHTML += `
+        <a href="${data.linkedin}" target="_blank" class="social-btn social-linkedin" title="LinkedIn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+        </a>`;
+    }
+
+    if (data.twitter) {
+      socials.innerHTML += `
+        <a href="${data.twitter}" target="_blank" class="social-btn social-twitter" title="X / Twitter">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>`;
+    }
+
+    if (data.website) {
+      socials.innerHTML += `
+        <a href="${data.website}" target="_blank" class="social-btn social-website" title="Website">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </a>`;
+    }
+
+    // QR code URL
+    const cardUrl = window.location.href;
+    document.getElementById('qrUrl').textContent = cardUrl;
+
+    // Show card
+    document.getElementById('cardLoading').classList.add('hidden');
+    document.getElementById('cardProfile').classList.remove('hidden');
+  }
+
+  function showError() {
+    document.getElementById('cardLoading').classList.add('hidden');
+    document.getElementById('cardError').classList.remove('hidden');
+  }
+
+  // Toggle QR code section
+  let qrGenerated = false;
+  function toggleQR() {
+    const qrSection = document.getElementById('qrSection');
+    qrSection.classList.toggle('hidden');
+    if (!qrGenerated && !qrSection.classList.contains('hidden')) {
+      new QRCode(document.getElementById('qrcode'), {
+        text: window.location.href,
+        width: 180,
+        height: 180,
+        colorDark: '#ffffff',
+        colorLight: '#1a1a2e',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      qrGenerated = true;
+    }
+  }
+
+  // Download vCard
+  function downloadVCard() {
+    const vCard = `BEGIN:VCARD\nVERSION:3.0\nFN:${cardData.name || ''}\nORG:${cardData.business || ''}\nTEL:${cardData.phone || ''}\nEMAIL:${cardData.email || ''}\nURL:${window.location.href}\nEND:VCARD`;
+    const blob = new Blob([vCard], { type: 'text/vcard' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(cardData.name || 'contact').replace(/\s+/g, '_')}.vcf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Share card using Web Share API
+  function shareCard() {
+    if (navigator.share) {
+      navigator.share({
+        title: `${cardData.name} – Digital Card`,
+        text: `Check out ${cardData.name}'s digital business card`,
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        alert('Card link copied to clipboard!');
+      });
+    }
+  }
+</script>
+
+</body>
+</html>
