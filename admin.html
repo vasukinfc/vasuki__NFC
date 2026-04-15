@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel – Vasuki NFC</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+
+  <!-- Firebase v10 compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="admin-page">
+
+<!-- ===================== LOGIN SCREEN ===================== -->
+<div class="admin-login" id="adminLogin">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="logo-icon">⬡</span>
+      <span>Vasuki <strong>NFC</strong></span>
+    </div>
+    <h2>Admin Login</h2>
+    <p class="login-sub">Secure access to card management</p>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="admin@vasukinfc.com" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="Enter password" />
+    </div>
+    <div class="error-msg hidden" id="loginError"></div>
+    <button class="btn-primary btn-full" id="loginBtn" onclick="adminLogin()">Sign In</button>
+
+    <a href="index.html" class="back-to-site">← Back to website</a>
+  </div>
+</div>
+
+<!-- ===================== ADMIN DASHBOARD ===================== -->
+<div class="admin-dashboard hidden" id="adminDashboard">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">⬡</span>
+      <span>Vasuki <strong>NFC</strong></span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="sidebar-link active" onclick="showSection('cards')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        All Cards
+      </a>
+      <a href="#" class="sidebar-link" onclick="showSection('add')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Add New Card
+      </a>
+      <a href="index.html" class="sidebar-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+        View Website
+      </a>
+    </nav>
+    <button class="sidebar-logout" onclick="adminLogout()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </button>
+  </aside>
+
+  <!-- Main content -->
+  <main class="admin-main">
+
+    <!-- Header -->
+    <div class="admin-header">
+      <div>
+        <h1 id="sectionTitle">All Cards</h1>
+        <p id="sectionSub">Manage digital business cards</p>
+      </div>
+      <button class="btn-primary btn-sm" onclick="showSection('add')">+ Add New Card</button>
+    </div>
+
+    <!-- ---- CARDS LIST SECTION ---- -->
+    <section class="admin-section" id="sectionCards">
+      <div class="admin-cards-stats" id="adminStats">
+        <div class="stat-box"><span id="totalCards">0</span><span>Total Cards</span></div>
+      </div>
+      <div class="admin-cards-grid" id="adminCardsGrid">
+        <div class="admin-loading">Loading cards...</div>
+      </div>
+    </section>
+
+    <!-- ---- ADD / EDIT CARD SECTION ---- -->
+    <section class="admin-section hidden" id="sectionAdd">
+      <div class="admin-form-card">
+        <h3 id="formTitle">Add New Card</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Slug (unique ID) <span class="req">*</span></label>
+            <input type="text" id="fSlug" placeholder="rahul-sharma" />
+            <small>Used in URL: yourdomain.com/card.html?slug=rahul-sharma</small>
+          </div>
+          <div class="form-group">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" id="fName" placeholder="Rahul Sharma" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Business / Company</label>
+            <input type="text" id="fBusiness" placeholder="Sharma Enterprises" />
+          </div>
+          <div class="form-group">
+            <label>Tagline / Designation</label>
+            <input type="text" id="fTagline" placeholder="Founder & CEO" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone <span class="req">*</span></label>
+            <input type="tel" id="fPhone" placeholder="+91 99999 99999" />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="fEmail" placeholder="rahul@example.com" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Profile Photo URL</label>
+          <input type="url" id="fPhoto" placeholder="https://example.com/photo.jpg" />
+          <small>Upload your image to Google Drive / Imgur and paste the direct link here</small>
+        </div>
+
+        <div class="form-section-title">Social Links (optional)</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Instagram URL</label>
+            <input type="url" id="fInstagram" placeholder="https://instagram.com/username" />
+          </div>
+          <div class="form-group">
+            <label>YouTube URL</label>
+            <input type="url" id="fYoutube" placeholder="https://youtube.com/channel" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>LinkedIn URL</label>
+            <input type="url" id="fLinkedin" placeholder="https://linkedin.com/in/username" />
+          </div>
+          <div class="form-group">
+            <label>X / Twitter URL</label>
+            <input type="url" id="fTwitter" placeholder="https://x.com/username" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Website URL</label>
+          <input type="url" id="fWebsite" placeholder="https://yourwebsite.com" />
+        </div>
+
+        <div class="error-msg hidden" id="formError"></div>
+        <div class="success-msg hidden" id="formSuccess"></div>
+
+        <div class="form-actions">
+          <button class="btn-ghost" onclick="cancelEdit()">Cancel</button>
+          <button class="btn-primary" id="saveCardBtn" onclick="saveCard()">
+            <span id="saveBtnText">Save Card</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== FIREBASE + ADMIN SCRIPT ===================== -->
+<script>
+  // =============================================
+  // REPLACE WITH YOUR FIREBASE CONFIG
+  // =============================================
+  // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCOmTjeArwCvJMWI0xxyle3fo66X7mTM-s",
+  authDomain: "vasuki-nfc-2bb32.firebaseapp.com",
+  projectId: "vasuki-nfc-2bb32",
+  storageBucket: "vasuki-nfc-2bb32.firebasestorage.app",
+  messagingSenderId: "403967953627",
+  appId: "1:403967953627:web:87d9d3c55b4d9a12909afe"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+  // =============================================
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let editingSlug = null; // null = adding new, string = editing
+
+  // ---- AUTH: Check login state on page load ----
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      document.getElementById('adminLogin').classList.add('hidden');
+      document.getElementById('adminDashboard').classList.remove('hidden');
+      loadCards();
+    } else {
+      document.getElementById('adminLogin').classList.remove('hidden');
+      document.getElementById('adminDashboard').classList.add('hidden');
+    }
+  });
+
+  // ---- LOGIN ----
+  async function adminLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    const errDiv = document.getElementById('loginError');
+
+    if (!email || !password) {
+      showMsg(errDiv, 'Please enter email and password.', 'error');
+      return;
+    }
+
+    btn.textContent = 'Signing in...';
+    btn.disabled = true;
+    errDiv.classList.add('hidden');
+
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+    } catch (err) {
+      let msg = 'Login failed. Check your credentials.';
+      if (err.code === 'auth/user-not-found') msg = 'No account found with this email.';
+      if (err.code === 'auth/wrong-password') msg = 'Incorrect password.';
+      if (err.code === 'auth/too-many-requests') msg = 'Too many attempts. Try later.';
+      showMsg(errDiv, msg, 'error');
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
+    }
+  }
+
+  // ---- LOGOUT ----
+  function adminLogout() {
+    auth.signOut();
+  }
+
+  // ---- LOAD ALL CARDS ----
+  async function loadCards() {
+    const grid = document.getElementById('adminCardsGrid');
+    grid.innerHTML = '<div class="admin-loading">Loading...</div>';
+
+    try {
+      const snapshot = await db.collection('cards').get();
+      const cards = [];
+      snapshot.forEach(doc => cards.push({ slug: doc.id, ...doc.data() }));
+
+      document.getElementById('totalCards').textContent = cards.length;
+
+      if (cards.length === 0) {
+        grid.innerHTML = '<div class="admin-empty">No cards yet. <button onclick="showSection(\'add\')">Add your first card</button></div>';
+        return;
+      }
+
+      grid.innerHTML = cards.map(card => `
+        <div class="admin-card-item" id="card-item-${card.slug}">
+          <div class="admin-card-avatar">
+            <img src="${card.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(card.name)}&background=1a1a2e&color=a855f7&size=80`}" alt="${card.name}" onerror="this.src='https://ui-avatars.com/api/?name=U&background=1a1a2e&color=a855f7&size=80'" />
+          </div>
+          <div class="admin-card-info">
+            <h4>${card.name || 'Unnamed'}</h4>
+            <p>${card.business || ''}</p>
+            <code class="slug-badge">${card.slug}</code>
+          </div>
+          <div class="admin-card-actions">
+            <a href="card.html?slug=${card.slug}" target="_blank" class="icon-btn" title="View card">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </a>
+            <button class="icon-btn" title="Edit card" onclick="editCard('${card.slug}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="icon-btn icon-btn-danger" title="Delete card" onclick="deleteCard('${card.slug}', '${card.name}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+    } catch (err) {
+      console.error(err);
+      grid.innerHTML = '<div class="admin-empty">Error loading cards. Check Firebase config.</div>';
+    }
+  }
+
+  // ---- EDIT CARD ----
+  async function editCard(slug) {
+    showSection('add');
+    editingSlug = slug;
+    document.getElementById('formTitle').textContent = 'Edit Card';
+    document.getElementById('saveBtnText').textContent = 'Update Card';
+    document.getElementById('fSlug').disabled = true;
+
+    try {
+      const doc = await db.collection('cards').doc(slug).get();
+      if (!doc.exists) return;
+      const d = doc.data();
+
+      document.getElementById('fSlug').value = slug;
+      document.getElementById('fName').value = d.name || '';
+      document.getElementById('fBusiness').value = d.business || '';
+      document.getElementById('fTagline').value = d.tagline || '';
+      document.getElementById('fPhone').value = d.phone || '';
+      document.getElementById('fEmail').value = d.email || '';
+      document.getElementById('fPhoto').value = d.photoUrl || '';
+      document.getElementById('fInstagram').value = d.instagram || '';
+      document.getElementById('fYoutube').value = d.youtube || '';
+      document.getElementById('fLinkedin').value = d.linkedin || '';
+      document.getElementById('fTwitter').value = d.twitter || '';
+      document.getElementById('fWebsite').value = d.website || '';
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // ---- SAVE (ADD/UPDATE) CARD ----
+  async function saveCard() {
+    const slug = document.getElementById('fSlug').value.trim().toLowerCase().replace(/\s+/g, '-');
+    const name = document.getElementById('fName').value.trim();
+    const errDiv = document.getElementById('formError');
+    const successDiv = document.getElementById('formSuccess');
+    const btn = document.getElementById('saveCardBtn');
+
+    errDiv.classList.add('hidden');
+    successDiv.classList.add('hidden');
+
+    if (!slug || !name) {
+      showMsg(errDiv, 'Slug and Name are required.', 'error');
+      return;
+    }
+
+    const cardData = {
+      name,
+      business: document.getElementById('fBusiness').value.trim(),
+      tagline: document.getElementById('fTagline').value.trim(),
+      phone: document.getElementById('fPhone').value.trim(),
+      email: document.getElementById('fEmail').value.trim(),
+      photoUrl: document.getElementById('fPhoto').value.trim(),
+      instagram: document.getElementById('fInstagram').value.trim(),
+      youtube: document.getElementById('fYoutube').value.trim(),
+      linkedin: document.getElementById('fLinkedin').value.trim(),
+      twitter: document.getElementById('fTwitter').value.trim(),
+      website: document.getElementById('fWebsite').value.trim(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if (!editingSlug) {
+      cardData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    }
+
+    btn.disabled = true;
+    btn.querySelector('#saveBtnText').textContent = 'Saving...';
+
+    try {
+      await db.collection('cards').doc(slug).set(cardData, { merge: true });
+      showMsg(successDiv, `Card "${name}" saved! View it at card.html?slug=${slug}`, 'success');
+      btn.disabled = false;
+      btn.querySelector('#saveBtnText').textContent = editingSlug ? 'Update Card' : 'Save Card';
+      loadCards();
+      setTimeout(() => { showSection('cards'); cancelEdit(); }, 1500);
+    } catch (err) {
+      console.error(err);
+      showMsg(errDiv, 'Error saving card: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.querySelector('#saveBtnText').textContent = editingSlug ? 'Update Card' : 'Save Card';
+    }
+  }
+
+  // ---- DELETE CARD ----
+  async function deleteCard(slug, name) {
+    if (!confirm(`Delete card for "${name}"? This cannot be undone.`)) return;
+    try {
+      await db.collection('cards').doc(slug).delete();
+      loadCards();
+    } catch (err) {
+      alert('Error deleting card: ' + err.message);
+    }
+  }
+
+  // ---- HELPERS ----
+  function cancelEdit() {
+    editingSlug = null;
+    document.getElementById('formTitle').textContent = 'Add New Card';
+    document.getElementById('saveBtnText').textContent = 'Save Card';
+    document.getElementById('fSlug').disabled = false;
+    ['fSlug','fName','fBusiness','fTagline','fPhone','fEmail','fPhoto',
+     'fInstagram','fYoutube','fLinkedin','fTwitter','fWebsite'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('formError').classList.add('hidden');
+    document.getElementById('formSuccess').classList.add('hidden');
+  }
+
+  function showSection(name) {
+    document.getElementById('sectionCards').classList.add('hidden');
+    document.getElementById('sectionAdd').classList.add('hidden');
+
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+
+    if (name === 'cards') {
+      document.getElementById('sectionCards').classList.remove('hidden');
+      document.getElementById('sectionTitle').textContent = 'All Cards';
+      document.getElementById('sectionSub').textContent = 'Manage digital business cards';
+      document.querySelectorAll('.sidebar-link')[0].classList.add('active');
+    } else if (name === 'add') {
+      document.getElementById('sectionAdd').classList.remove('hidden');
+      document.getElementById('sectionTitle').textContent = editingSlug ? 'Edit Card' : 'Add New Card';
+      document.getElementById('sectionSub').textContent = 'Fill in the card details below';
+      document.querySelectorAll('.sidebar-link')[1].classList.add('active');
+    }
+  }
+
+  function showMsg(el, msg, type) {
+    el.textContent = msg;
+    el.className = type === 'error' ? 'error-msg' : 'success-msg';
+  }
+
+  // Allow pressing Enter to login
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('adminLogin').classList.contains('hidden')) {
+      adminLogin();
+    }
+  });
+</script>
+
+</body>
+</html>
